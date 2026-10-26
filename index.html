@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="id" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <!-- Mencegah pinch-to-zoom / mengunci zoom -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Musicify - Vintage Audio Player</title>
+
+    <!-- Dynamic Web App Manifest Injection -->
+    <script>
+        const manifestData = {
+            "name": "Musicify - Vintage Audio Player",
+            "short_name": "Musicify",
+            "start_url": "./",
+            "display": "standalone",
+            "background_color": "#1A1A1D",
+            "theme_color": "#D97724",
+            "description": "Aplikasi Web Pemutar Musik Offline Tanpa Iklan dengan Tema Vintage Glassmorphism",
+            "icons": [
+                {
+                    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%231A1A1D'/><circle cx='256' cy='256' r='180' fill='%23D97724'/><circle cx='256' cy='256' r='60' fill='%231A1A1D'/><path d='M256 120 A136 136 0 0 1 392 256' stroke='%23F5E6D3' stroke-width='16' fill='none'/></svg>",
+                    "sizes": "192x192",
+                    "type": "image/svg+xml",
+                    "purpose": "any maskable"
+                }
+            ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = manifestUrl;
+        document.head.appendChild(manifestLink);
+    </script>
+
+    <meta name="theme-color" content="#D97724">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Musicify">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        vintage: {
+                            bg: '#1A1A1D',
+                            card: 'rgba(37, 37, 42, 0.55)',
+                            cardBorder: 'rgba(245, 230, 211, 0.12)',
+                            cream: '#F5E6D3',
+                            creamMuted: '#C2B4A3',
+                            amber: '#D97724',
+                            amberHover: '#B85E1A',
+                            teal: '#2B7A78',
+                            tealGlow: '#3AAFA9'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome Icons & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* Mencegah zoom ganda dan mengunci layar agar fix */
+        html, body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #1A1A1D;
+            background-image: 
+                radial-gradient(at 10% 20%, rgba(43, 122, 120, 0.25) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(217, 119, 36, 0.2) 0px, transparent 50%),
+                radial-gradient(at 50% 50%, rgba(58, 175, 169, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            touch-action: pan-x pan-y;
+        }
+
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(30, 30, 35, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(245, 230, 211, 0.12);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-header {
+            background: rgba(26, 26, 29, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(245, 230, 211, 0.1);
+        }
+
+        .glass-footer {
+            background: rgba(22, 22, 25, 0.85);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-top: 1px solid rgba(245, 230, 211, 0.15);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(245, 230, 211, 0.2);
+            border-radius: 9999px;
+        }
+
+        /* Custom Seekbar Input */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: rgba(245, 230, 211, 0.2);
+            height: 4px;
+            border-radius: 2px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -4px;
+            background-color: #F5E6D3;
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(217, 119, 36, 0.6);
+        }
+
+        /* Drag & Drop Visual Effects */
+        .drag-over {
+            border-color: #D97724 !important;
+            background-color: rgba(217, 119, 36, 0.15) !important;
+        }
+
+        /* Animated Audio Equalizer Bars */
+        .eq-bar {
+            width: 3px;
+            background-color: #D97724;
+            border-radius: 2px;
+            animation: bounce 0.8s ease-in-out infinite alternate;
+        }
+        .eq-bar:nth-child(1) { animation-delay: 0.1s; }
+        .eq-bar:nth-child(2) { animation-delay: 0.3s; }
+        .eq-bar:nth-child(3) { animation-delay: 0.5s; }
+        .eq-bar:nth-child(4) { animation-delay: 0.2s; }
+
+        @keyframes bounce {
+            0% { height: 4px; }
+            100% { height: 16px; }
+        }
+    </style>
+</head>
+<body class="text-vintage-cream flex flex-col select-none">
+
+    <!-- PWA Installation Alert Banner -->
+    <div id="pwaBanner" class="hidden bg-gradient-to-r from-vintage-amber via-vintage-teal to-vintage-amber text-vintage-cream px-3 py-2 flex items-center justify-between text-xs font-semibold shadow-2xl z-50">
+        <div class="flex items-center space-x-2 truncate">
+            <i class="fa-solid fa-download flex-shrink-0"></i>
+            <span class="truncate">Instal <strong>Musicify</strong> sebagai aplikasi offline!</span>
+        </div>
+        <div class="flex items-center space-x-2 flex-shrink-0">
+            <button id="btnPwaInstall" class="bg-vintage-bg text-vintage-cream border border-vintage-amber px-3 py-1 rounded-full text-[10px] font-extrabold">Install</button>
+            <button id="btnDismissPwa" class="text-vintage-cream p-1"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+    </div>
+
+    <!-- Outer App Container -->
+    <div class="flex flex-1 overflow-hidden p-2 gap-2 h-[calc(100vh-60px)]">
+
+        <!-- Sidebar Navigation (Desktop) -->
+        <aside class="w-64 glass-panel rounded-2xl flex-col justify-between hidden md:flex p-4">
+            <div class="space-y-4">
+                <div class="flex items-center space-x-3 text-vintage-amber cursor-pointer" onclick="switchView('all')">
+                    <div class="w-9 h-9 rounded-xl bg-vintage-amber/20 border border-vintage-amber/40 flex items-center justify-center">
+                        <i class="fa-solid fa-record-vinyl text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="text-lg font-extrabold text-vintage-cream block leading-tight">Musicify</span>
+                        <span class="text-[9px] text-vintage-teal font-semibold uppercase block">Vintage PWA</span>
+                    </div>
+                </div>
+
+                <nav class="space-y-1">
+                    <button onclick="switchView('all')" id="navHome" class="w-full flex items-center space-x-3 text-vintage-cream font-bold px-3 py-2 rounded-xl bg-vintage-amber/20 border border-vintage-amber/30 text-xs">
+                        <i class="fa-solid fa-compact-disc text-vintage-amber"></i>
+                        <span>Semua Lagu</span>
+                    </button>
+                    <button onclick="switchView('favorites')" id="navFavs" class="w-full flex items-center space-x-3 text-vintage-creamMuted font-bold hover:text-vintage-cream px-3 py-2 rounded-xl hover:bg-white/5 text-xs">
+                        <i class="fa-solid fa-heart text-rose-500"></i>
+                        <span>Lagu Disukai</span>
+                    </button>
+                </nav>
+
+                <div class="pt-4 border-t border-vintage-cream/10 space-y-2">
+                    <label class="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-vintage-amber to-vintage-amberHover text-white font-bold text-xs py-2.5 px-3 rounded-xl cursor-pointer shadow-md">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Tambah MP3</span>
+                        <input type="file" accept="audio/*" multiple class="hidden" onchange="handleAudioUpload(event)">
+                    </label>
+                    <button onclick="confirmClearAll()" class="w-full text-[11px] text-vintage-creamMuted hover:text-rose-400 py-1">Hapus Semua</button>
+                </div>
+            </div>
+            <div class="bg-black/30 p-2.5 rounded-xl border border-vintage-cream/10 flex items-center space-x-2 text-[11px]">
+                <div class="w-2 h-2 rounded-full bg-vintage-tealGlow animate-pulse"></div>
+                <span class="text-vintage-cream">IndexedDB Ready</span>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 glass-panel rounded-2xl overflow-y-auto flex flex-col relative">
+            
+            <!-- Sticky Header -->
+            <header class="p-3 flex items-center justify-between glass-header sticky top-0 z-20">
+                <div class="relative flex-1 max-w-sm">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-vintage-creamMuted text-xs"></i>
+                    <input type="text" id="searchInput" placeholder="Cari judul atau artis..." class="w-full bg-black/30 text-xs text-vintage-cream pl-9 pr-3 py-1.5 rounded-xl border border-vintage-cream/10 focus:border-vintage-amber focus:outline-none">
+                </div>
+
+                <div class="flex items-center space-x-2 ml-2">
+                    <label class="bg-gradient-to-r from-vintage-amber to-vintage-amberHover text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer shadow-md">
+                        <i class="fa-solid fa-folder-plus text-xs"></i>
+                        <span class="hidden sm:inline">Upload</span>
+                        <input type="file" accept="audio/*" multiple class="hidden" onchange="handleAudioUpload(event)">
+                    </label>
+                    <button onclick="switchView('favorites')" class="md:hidden text-rose-500 bg-black/40 border border-vintage-cream/10 px-2.5 py-1.5 rounded-xl text-xs">
+                        <i class="fa-solid fa-heart"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content Body -->
+            <div id="dropZone" class="p-3 sm:p-5 space-y-4 flex-1 transition border-2 border-transparent">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 id="sectionTitle" class="text-base sm:text-lg font-extrabold text-vintage-cream">Playlist Kamu</h2>
+                        <p class="text-[11px] text-vintage-creamMuted">Putar musik offline langsung dari perangkat Anda.</p>
+                    </div>
+                    <span id="trackCount" class="text-[11px] font-bold text-vintage-amber bg-vintage-amber/15 border border-vintage-amber/30 px-2.5 py-1 rounded-lg">0 Lagu</span>
+                </div>
+
+                <!-- Track Table Display -->
+                <div class="bg-black/20 rounded-xl border border-vintage-cream/10 overflow-hidden shadow-xl">
+                    <div class="grid grid-cols-12 text-[10px] text-vintage-creamMuted font-extrabold uppercase border-b border-vintage-cream/10 px-3 py-2 bg-white/5">
+                        <div class="col-span-1 text-center">#</div>
+                        <div class="col-span-7 sm:col-span-6">Judul & Artis</div>
+                        <div class="col-span-2 hidden sm:block">Ukuran</div>
+                        <div class="col-span-4 sm:col-span-3 text-right pr-1">Durasi / Aksi</div>
+                    </div>
+                    <div id="playlistContainer" class="divide-y divide-vintage-cream/5"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Fixed Bottom Audio Player Controls -->
+    <footer class="h-20 glass-footer px-4 flex items-center justify-between z-40 fixed bottom-0 left-0 w-full">
+        <!-- Track Visual Meta (Kiri) -->
+        <div class="flex items-center space-x-2.5 w-1/3 truncate">
+            <div class="w-11 h-11 bg-vintage-bg rounded-lg overflow-hidden flex-shrink-0 border border-vintage-cream/15 relative flex items-center justify-center">
+                <i class="fa-solid fa-compact-disc text-vintage-amber text-xl animate-spin" style="animation-duration: 8s;"></i>
+                <div id="eqContainer" class="hidden absolute inset-0 bg-black/60 flex items-center justify-center space-x-0.5">
+                    <div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div>
+                </div>
+            </div>
+            <div class="truncate">
+                <div id="currentTitle" class="font-bold text-xs text-vintage-cream truncate">Belum Ada Lagu</div>
+                <div id="currentArtist" class="text-[10px] text-vintage-creamMuted truncate">Pilih file MP3</div>
+            </div>
+        </div>
+
+        <!-- Central Player Controls (Tengah) -->
+        <div class="flex flex-col items-center w-2/3 px-1">
+            <div class="flex items-center space-x-4 mb-1">
+                <button id="btnShuffle" class="text-vintage-creamMuted hover:text-vintage-cream text-xs"><i class="fa-solid fa-shuffle"></i></button>
+                <button id="btnPrev" class="text-vintage-creamMuted hover:text-vintage-cream text-xs"><i class="fa-solid fa-backward-step"></i></button>
+                <button id="btnPlay" class="w-9 h-9 rounded-full bg-gradient-to-r from-vintage-amber to-vintage-amberHover text-white flex items-center justify-center shadow-md">
+                    <i id="playIcon" class="fa-solid fa-play text-xs ml-0.5"></i>
+                </button>
+                <button id="btnNext" class="text-vintage-creamMuted hover:text-vintage-cream text-xs"><i class="fa-solid fa-forward-step"></i></button>
+                <button id="btnRepeat" class="text-vintage-creamMuted hover:text-vintage-cream text-xs"><i id="repeatIcon" class="fa-solid fa-repeat"></i></button>
+            </div>
+
+            <div class="w-full flex items-center space-x-1.5 text-[10px]">
+                <span id="currentTime" class="text-vintage-creamMuted w-7 text-right font-mono">0:00</span>
+                <input type="range" id="progressBar" min="0" max="100" value="0" class="flex-1 h-1">
+                <span id="totalTime" class="text-vintage-creamMuted w-7 font-mono">0:00</span>
+            </div>
+        </div>
+    </footer>
+
+    <audio id="audioPlayer" class="hidden"></audio>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-24 right-4 bg-vintage-amber text-white px-3 py-2 rounded-xl font-bold text-xs shadow-2xl transition transform translate-y-20 opacity-0 z-50 flex items-center space-x-2">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toastMsg">Notifikasi</span>
+    </div>
+
+    <script>
+        // --- IndexedDB & App Logic ---
+        const DB_NAME = 'MusicifyVintagePWA_DB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'tracks';
+        let db;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                };
+                request.onsuccess = (e) => { db = e.target.result; resolve(db); };
+                request.onerror = (e) => reject(e);
+            });
+        }
+
+        function saveTrackToDB(trackObj) {
+            return new Promise((resolve) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                tx.objectStore(STORE_NAME).put(trackObj);
+                tx.oncomplete = () => resolve();
+            });
+        }
+
+        function getAllTracksFromDB() {
+            return new Promise((resolve) => {
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const req = tx.objectStore(STORE_NAME).getAll();
+                req.onsuccess = () => resolve(req.result);
+            });
+        }
+
+        function deleteTrackFromDB(id) {
+            return new Promise((resolve) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                tx.objectStore(STORE_NAME).delete(id);
+                tx.oncomplete = () => resolve();
+            });
+        }
+
+        function clearDB() {
+            return new Promise((resolve) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                tx.objectStore(STORE_NAME).clear();
+                tx.oncomplete = () => resolve();
+            });
+        }
+
+        let masterLibrary = [];
+        let activePlaylist = [];
+        let activeTrackId = null;
+        let favoriteIds = JSON.parse(localStorage.getItem('musicify_fav_songs')) || [];
+        let isPlaying = false;
+        let shuffleMode = false;
+        let repeatMode = 0;
+        let currentView = 'all';
+        let currentBlobUrl = null;
+        let deferredPwaPrompt = null;
+
+        const audioPlayer = document.getElementById('audioPlayer');
+        const btnPlay = document.getElementById('btnPlay');
+        const playIcon = document.getElementById('playIcon');
+        const btnPrev = document.getElementById('btnPrev');
+        const btnNext = document.getElementById('btnNext');
+        const btnShuffle = document.getElementById('btnShuffle');
+        const btnRepeat = document.getElementById('btnRepeat');
+        const repeatIcon = document.getElementById('repeatIcon');
+        const progressBar = document.getElementById('progressBar');
+        const currentTimeEl = document.getElementById('currentTime');
+        const totalTimeEl = document.getElementById('totalTime');
+        const currentTitle = document.getElementById('currentTitle');
+        const currentArtist = document.getElementById('currentArtist');
+        const eqContainer = document.getElementById('eqContainer');
+        const playlistContainer = document.getElementById('playlistContainer');
+        const searchInput = document.getElementById('searchInput');
+        const trackCountEl = document.getElementById('trackCount');
+        const sectionTitle = document.getElementById('sectionTitle');
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toastMsg');
+        const dropZone = document.getElementById('dropZone');
+        const navHome = document.getElementById('navHome');
+        const navFavs = document.getElementById('navFavs');
+        const pwaBanner = document.getElementById('pwaBanner');
+        const btnPwaInstall = document.getElementById('btnPwaInstall');
+        const btnDismissPwa = document.getElementById('btnDismissPwa');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPwaPrompt = e;
+            pwaBanner.classList.remove('hidden');
+        });
+
+        btnPwaInstall?.addEventListener('click', async () => {
+            if (deferredPwaPrompt) {
+                deferredPwaPrompt.prompt();
+                deferredPwaPrompt = null;
+                pwaBanner.classList.add('hidden');
+            }
+        });
+        btnDismissPwa?.addEventListener('click', () => pwaBanner.classList.add('hidden'));
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await initDB();
+            masterLibrary = await getAllTracksFromDB();
+            activePlaylist = [...masterLibrary];
+            renderPlaylist();
+            audioPlayer.volume = 0.8;
+        });
+
+        function handleAudioUpload(e) {
+            handleFilesList(e.target.files);
+            e.target.value = '';
+        }
+
+        async function handleFilesList(files) {
+            if (!files || files.length === 0) return;
+            let addedCount = 0;
+            for (const file of files) {
+                if (!file.type.startsWith('audio/')) continue;
+                const blobUrl = URL.createObjectURL(file);
+                const tempAudio = new Audio(blobUrl);
+                await new Promise((resolve) => {
+                    tempAudio.addEventListener('loadedmetadata', async () => {
+                        const name = file.name.replace(/\.[^/.]+$/, "");
+                        let title = name, artist = 'Lokal';
+                        if (name.includes(' - ')) {
+                            const p = name.split(' - ');
+                            artist = p[0].trim(); title = p.slice(1).join(' - ').trim();
+                        }
+                        const track = {
+                            id: 't-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                            title, artist, size: (file.size / (1024*1024)).toFixed(1) + ' MB',
+                            durationFormatted: formatTime(tempAudio.duration), audioBlob: file
+                        };
+                        await saveTrackToDB(track);
+                        masterLibrary.push(track);
+                        addedCount++;
+                        URL.revokeObjectURL(blobUrl);
+                        resolve();
+                    });
+                });
+            }
+            switchView(currentView);
+            showToast(`${addedCount} lagu ditambahkan!`);
+            if (!activeTrackId && masterLibrary.length > 0) playTrackById(masterLibrary[0].id);
+        }
+
+        function switchView(view) {
+            currentView = view;
+            searchInput.value = '';
+            if (view === 'all') {
+                activePlaylist = [...masterLibrary];
+                sectionTitle.textContent = "Playlist Kamu";
+                navHome.className = "w-full flex items-center space-x-3 text-vintage-cream font-bold px-3 py-2 rounded-xl bg-vintage-amber/20 border border-vintage-amber/30 text-xs";
+                navFavs.className = "w-full flex items-center space-x-3 text-vintage-creamMuted font-bold hover:text-vintage-cream px-3 py-2 rounded-xl hover:bg-white/5 text-xs";
+            } else {
+                activePlaylist = masterLibrary.filter(t => favoriteIds.includes(t.id));
+                sectionTitle.textContent = "Lagu Disukai";
+                navFavs.className = "w-full flex items-center space-x-3 text-vintage-cream font-bold px-3 py-2 rounded-xl bg-vintage-amber/20 border border-vintage-amber/30 text-xs";
+                navHome.className = "w-full flex items-center space-x-3 text-vintage-creamMuted font-bold hover:text-vintage-cream px-3 py-2 rounded-xl hover:bg-white/5 text-xs";
+            }
+            renderPlaylist();
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            const q = e.target.value.toLowerCase().trim();
+            const src = currentView === 'favorites' ? masterLibrary.filter(t => favoriteIds.includes(t.id)) : masterLibrary;
+            activePlaylist = q === '' ? [...src] : src.filter(t => t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q));
+            renderPlaylist();
+        });
+
+        function renderPlaylist() {
+            trackCountEl.textContent = `${activePlaylist.length} Lagu`;
+            if (activePlaylist.length === 0) {
+                playlistContainer.innerHTML = `<div class="p-8 text-center text-vintage-creamMuted text-xs">Belum ada lagu. Upload file MP3 Anda.</div>`;
+                return;
+            }
+            let html = '';
+            activePlaylist.forEach((track, idx) => {
+                const isActive = track.id === activeTrackId;
+                const isFav = favoriteIds.includes(track.id);
+                html += `
+                    <div onclick="playTrackById('${track.id}')" class="grid grid-cols-12 items-center px-3 py-2.5 hover:bg-white/5 transition cursor-pointer group ${isActive ? 'bg-vintage-amber/15' : ''}">
+                        <div class="col-span-1 text-center font-mono text-[11px] ${isActive ? 'text-vintage-amber font-bold' : 'text-vintage-creamMuted'}">${isActive && isPlaying ? '<i class="fa-solid fa-volume-high text-vintage-amber animate-pulse"></i>' : (idx + 1)}</div>
+                        <div class="col-span-7 sm:col-span-6 flex items-center space-x-2.5 truncate pr-2">
+                            <div class="w-8 h-8 bg-black/40 rounded-md flex-shrink-0 flex items-center justify-center text-vintage-amber text-xs"><i class="fa-solid fa-music"></i></div>
+                            <div class="truncate">
+                                <p class="font-bold text-xs truncate ${isActive ? 'text-vintage-amber' : 'text-vintage-cream'}">${track.title}</p>
+                                <p class="text-[10px] text-vintage-creamMuted truncate">${track.artist}</p>
+                            </div>
+                        </div>
+                        <div class="col-span-2 hidden sm:block text-[10px] text-vintage-creamMuted font-mono">${track.size}</div>
+                        <div class="col-span-4 sm:col-span-3 flex items-center justify-end space-x-2 text-xs text-vintage-creamMuted">
+                            <button onclick="event.stopPropagation(); toggleFavorite('${track.id}')" class="hover:text-rose-500 p-1"><i class="${isFav ? 'fa-solid text-rose-500' : 'fa-regular'} fa-heart"></i></button>
+                            <span class="font-mono text-[10px]">${track.durationFormatted}</span>
+                            <button onclick="event.stopPropagation(); removeTrack('${track.id}')" class="hover:text-rose-400 p-1 opacity-0 group-hover:opacity-100"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>`;
+            });
+            playlistContainer.innerHTML = html;
+        }
+
+        function playTrackById(id) {
+            const track = masterLibrary.find(t => t.id === id);
+            if (!track) return;
+            activeTrackId = id;
+            if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+            currentBlobUrl = URL.createObjectURL(track.audioBlob);
+            audioPlayer.src = currentBlobUrl;
+            currentTitle.textContent = track.title;
+            currentArtist.textContent = track.artist;
+            playAudio();
+            renderPlaylist();
+        }
+
+        function playAudio() {
+            if (!audioPlayer.src) return;
+            audioPlayer.play().then(() => {
+                isPlaying = true;
+                playIcon.className = 'fa-solid fa-pause text-xs';
+                eqContainer.classList.remove('hidden');
+                renderPlaylist();
+            }).catch(e => console.log(e));
+        }
+
+        function pauseAudio() {
+            audioPlayer.pause();
+            isPlaying = false;
+            playIcon.className = 'fa-solid fa-play text-xs ml-0.5';
+            eqContainer.classList.add('hidden');
+            renderPlaylist();
+        }
+
+        btnPlay.addEventListener('click', () => {
+            if (isPlaying) pauseAudio();
+            else {
+                if (!activeTrackId && activePlaylist.length > 0) playTrackById(activePlaylist[0].id);
+                else playAudio();
+            }
+        });
+
+        function playNextTrack() {
+            if (activePlaylist.length === 0) return;
+            const idx = activePlaylist.findIndex(t => t.id === activeTrackId);
+            let next = (idx + 1) % activePlaylist.length;
+            playTrackById(activePlaylist[next].id);
+        }
+
+        function playPrevTrack() {
+            if (activePlaylist.length === 0) return;
+            if (audioPlayer.currentTime > 3) { audioPlayer.currentTime = 0; return; }
+            const idx = activePlaylist.findIndex(t => t.id === activeTrackId);
+            let prev = (idx - 1 + activePlaylist.length) % activePlaylist.length;
+            playTrackById(activePlaylist[prev].id);
+        }
+
+        btnNext.addEventListener('click', playNextTrack);
+        btnPrev.addEventListener('click', playPrevTrack);
+
+        audioPlayer.addEventListener('ended', playNextTrack);
+
+        audioPlayer.addEventListener('timeupdate', () => {
+            if (isNaN(audioPlayer.duration)) return;
+            progressBar.value = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+            currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
+            totalTimeEl.textContent = formatTime(audioPlayer.duration);
+        });
+
+        progressBar.addEventListener('input', () => {
+            if (audioPlayer.duration) audioPlayer.currentTime = (progressBar.value / 100) * audioPlayer.duration;
+        });
+
+        function toggleFavorite(id) {
+            const idx = favoriteIds.indexOf(id);
+            if (idx > -1) favoriteIds.splice(idx, 1);
+            else favoriteIds.push(id);
+            localStorage.setItem('musicify_fav_songs', JSON.stringify(favoriteIds));
+            if (currentView === 'favorites') switchView('favorites');
+            else renderPlaylist();
+        }
+
+        async function removeTrack(id) {
+            await deleteTrackFromDB(id);
+            masterLibrary = masterLibrary.filter(t => t.id !== id);
+            if (activeTrackId === id) { pauseAudio(); audioPlayer.src = ''; activeTrackId = null; }
+            switchView(currentView);
+            showToast('Lagu dihapus');
+        }
+
+        async function confirmClearAll() {
+            await clearDB();
+            masterLibrary = [];
+            activePlaylist = [];
+            pauseAudio();
+            audioPlayer.src = '';
+            activeTrackId = null;
+            renderPlaylist();
+            showToast('Semua lagu dikosongkan');
+        }
+
+        function formatTime(sec) {
+            if (isNaN(sec)) return '0:00';
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        function showToast(msg) {
+            toastMsg.textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
